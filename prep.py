@@ -1,8 +1,12 @@
 ''' Prepare data, regardless of survey period, for analysis. '''
 import sys
 import os
+
 import pandas as pd
 import numpy as np
+
+from strategies import Ego, Alter
+
 
 def read_input_files(input_files):
     return [pd.read_csv(file, sep=None, engine='python') for file in
@@ -11,8 +15,15 @@ def read_input_files(input_files):
 
 def main(config):
     ego = pd.concat(read_input_files(config.ego_input_files))
+    alt = pd.concat(read_input_files(config.alt_input_files))
+
+    ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
+           len(group)>1]
+    # alt = [Alter(indv) for indv in alt if len(indv)>1]
+
     import pdb; pdb.set_trace()
     # stuff to go in here
+
 
 class Config(object):
     _path_to_data = os.getcwd()
@@ -38,11 +49,15 @@ class BaselineConfig(Config):
 
 class MidlineConfig(Config):
     _data_dir = '/data/m6/'
+    _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
+    _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
     # this is stuff for the midline survey
 
 
 class EndlineConfig(Config):
     _data_dir = '/data/m12/'
+    _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
+    _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
     # this is stuff for the endline survey
 
 
