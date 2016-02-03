@@ -11,9 +11,9 @@ class Ego(object):
 
     '''
 
-    def __init__(self, data, id):
+    def __init__(self, data, ego_id):
         self.data = data
-        self.id = id
+        self.ego_id = ego_id
 
     def len(self):
         return len(self.data)

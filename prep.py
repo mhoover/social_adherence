@@ -18,7 +18,8 @@ def main(config):
     alt = pd.concat(read_input_files(config.alt_input_files))
 
     ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
-           len(group)>1]
+           (len(group)>1) & ((id>=300) & (id<=475)) |
+           ((id>=500) & (id<=526))]
     # alt = [Alter(indv) for indv in alt if len(indv)>1]
 
     import pdb; pdb.set_trace()
