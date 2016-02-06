@@ -1,6 +1,7 @@
 ''' Prepare data, regardless of survey period, for analysis. '''
 import sys
 import os
+import re
 
 import pandas as pd
 import numpy as np
@@ -13,14 +14,23 @@ def read_input_files(input_files):
             input_files]
 
 
+def rename_variables(data):
+    data.columns = [re.sub('\s', '_', names) for
+                    names in data.columns.tolist()]
+    return data
+
+
 def main(config):
-    ego = pd.concat(read_input_files(config.ego_input_files))
-    alt = pd.concat(read_input_files(config.alt_input_files))
+    ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
+    alt = rename_variables(pd.concat(read_input_files(config.alt_input_files)))
+    import pdb; pdb.set_trace()
 
     ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
            (len(group)>1) & ((id>=300) & (id<=475)) |
            ((id>=500) & (id<=526))]
-    # alt = [Alter(indv) for indv in alt if len(indv)>1]
+    alt = [Alter(group, id) for id, group in alt.groupby('EgoID') if
+           (len(group)>1) & ((id>=300) & (id<=475)) |
+           ((id>=500) & (id<=526))]
 
     import pdb; pdb.set_trace()
     # stuff to go in here
