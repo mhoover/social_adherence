@@ -20,20 +20,27 @@ def rename_variables(data):
     return data
 
 
+def change_to_missing(data):
+    return data.applymap(lambda x: np.nan if x<0 else x)
+
+
 def main(config):
+    # read in data and rename columns
     ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
     alt = rename_variables(pd.concat(read_input_files(config.alt_input_files)))
-    import pdb; pdb.set_trace()
 
+    # change uncollected data to missing (np.nan)
+    ego = change_to_missing(ego)
+    alt = change_to_missing(alt)
+
+    # create ego and alter classes
     ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
            (len(group)>1) & ((id>=300) & (id<=475)) |
            ((id>=500) & (id<=526))]
     alt = [Alter(group, id) for id, group in alt.groupby('EgoID') if
            (len(group)>1) & ((id>=300) & (id<=475)) |
            ((id>=500) & (id<=526))]
-
     import pdb; pdb.set_trace()
-    # stuff to go in here
 
 
 class Config(object):
@@ -48,28 +55,24 @@ class Config(object):
     def alt_input_files(self):
         return ['{}{}{}'.format(self._path_to_data, self._data_dir, fname) for
                 fname in self._alt_inputs]
-    # basics go in here
 
 
 class BaselineConfig(Config):
     _data_dir = '/data/m0/'
     _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
     _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
-    # this is stuff for the baseline survey
 
 
 class MidlineConfig(Config):
     _data_dir = '/data/m6/'
     _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
     _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
-    # this is stuff for the midline survey
 
 
 class EndlineConfig(Config):
     _data_dir = '/data/m12/'
     _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
     _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
-    # this is stuff for the endline survey
 
 
 if __name__ == '__main__':
