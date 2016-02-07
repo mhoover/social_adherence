@@ -7,6 +7,7 @@ import pickle
 import pandas as pd
 import numpy as np
 
+from datetime import datetime
 from classes import Ego, Alter
 
 
@@ -29,6 +30,17 @@ def change_to_missing(data):
     return data.applymap(lambda x: np.nan if x<0 else x)
 
 
+def convert_dates(data, variable):
+    mth = [mth.group(0)[:3] if mth is not None else '' for mth in
+           data[variable].apply(lambda x: re.search('[A-Za-z]{1,}',
+           x)).tolist()]
+    yr = [yr.group(0) if yr is not None else '' for yr in
+          data[variable].apply(lambda x: re.search('\d{2,}',
+          x)).tolist()]
+    return [datetime.strptime('01{}{}'.format(m, y), '%d%b%Y') if m is not
+            '' else np.nan for m, y in zip(mth, yr)]
+
+
 def main(config):
     # read in data and rename columns
     ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
@@ -38,8 +50,6 @@ def main(config):
     # change uncollected data to missing (np.nan)
     ego = change_to_missing(ego)
     alt = change_to_missing(alt)
-
-    import pdb; pdb.set_trace()
 
     # make survey-dependent changes
     if config.name=='baseline':
@@ -51,13 +61,23 @@ def main(config):
         ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
         ego.rename(columns={'EgoGender': 'male'}, inplace=True)
 
-        mth = [mth.group(0)[:3] if mth is not None else '' for mth in
-               ego.EgoStartCare.apply(lambda x: re.search('[A-Za-z]{1,}',
-               x)).tolist()]
-        yr = [yr.group(0) if yr is not None else '' for yr in
-              ego.EgoStartCare.apply(lambda x: re.search('\d{2,}',
-              x)).tolist()]
+        ego.EgoStartCare = convert_dates(ego, 'EgoStartCare')
+        ego.EgoDateTestPoz = convert_dates(ego, 'EgoDateTestPoz')
 
+        # fixup start care year for a couple of ego's (bad dates discovered by
+        # hand)
+        ego.EgoStartCare[(ego.EgoID==385) |
+                         (ego.EgoID==392)] == datetime.strptime('01Dec2010',
+                         '%d%b%Y')
+        ego.EgoStartCare[(ego.EgoID==349) |
+                         (ego.EgoID==392)] == datetime.strptime('01Jan2011',
+                         '%d%b%Y')
+
+        # variable creation
+        ego['mths_treatment'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
+                                ego.EgoStartCare) / np.timedelta64(1, 'M')
+        ego['yrs_positive'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
+                                ego.DateTestPoz) / np.timedelta64(1, 'Y')
 
     elif config.name=='midline':
         cd4 = pd.concat(read_input_files(config.cd4_input_files,
