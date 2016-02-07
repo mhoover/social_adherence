@@ -34,18 +34,37 @@ def main(config):
     ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
     alt = rename_variables(pd.concat(read_input_files(config.alt_input_files)))
 
-    # read in cd4 data, which is survey-dependent
-    if config.name=='baseline':
-        cd4 = pd.concat(read_input_files(config.cd4_input_files,
-                        header=['Egoid', 'cd4']))
-    elif config.name=='midline':
-        cd4 = pd.concat(read_input_files(config.cd4_input_files,
-                        header=['Egoid', 'cd4']))
-        cd4 = cd4[cd4.cd4>0]
 
     # change uncollected data to missing (np.nan)
     ego = change_to_missing(ego)
     alt = change_to_missing(alt)
+
+    import pdb; pdb.set_trace()
+
+    # make survey-dependent changes
+    if config.name=='baseline':
+        # read in cd4 count updates
+        cd4 = pd.concat(read_input_files(config.cd4_input_files,
+                        header=['Egoid', 'cd4']))
+
+        # clean variables
+        ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
+        ego.rename(columns={'EgoGender': 'male'}, inplace=True)
+
+        mth = [mth.group(0)[:3] if mth is not None else '' for mth in
+               ego.EgoStartCare.apply(lambda x: re.search('[A-Za-z]{1,}',
+               x)).tolist()]
+        yr = [yr.group(0) if yr is not None else '' for yr in
+              ego.EgoStartCare.apply(lambda x: re.search('\d{2,}',
+              x)).tolist()]
+
+
+    elif config.name=='midline':
+        cd4 = pd.concat(read_input_files(config.cd4_input_files,
+                        header=['Egoid', 'cd4']))
+        cd4 = cd4[cd4.cd4>0]
+    else:
+        pass
 
     # create ego and alter classes
     ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
