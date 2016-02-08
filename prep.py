@@ -41,11 +41,23 @@ def convert_dates(data, variable):
             '' else np.nan for m, y in zip(mth, yr)]
 
 
+def make_dichotomous(variable, **kwargs):
+    if pd.isnull(variable):
+        return np.nan
+    else:
+        if 'dichot' in kwargs:
+            return 1 if variable>kwargs['dichot'] else 0
+        elif 'one' in kwargs:
+            if variable in kwargs['one']:
+                return 1
+            else:
+                return 0
+
+
 def main(config):
     # read in data and rename columns
     ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
     alt = rename_variables(pd.concat(read_input_files(config.alt_input_files)))
-
 
     # change uncollected data to missing (np.nan)
     ego = change_to_missing(ego)
@@ -77,7 +89,9 @@ def main(config):
         ego['mths_treatment'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
                                 ego.EgoStartCare) / np.timedelta64(1, 'M')
         ego['yrs_positive'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
-                                ego.DateTestPoz) / np.timedelta64(1, 'Y')
+                                ego.EgoDateTestPoz) / np.timedelta64(1, 'Y')
+        ego['isolate'] = ego.Degree_centrality.apply(make_dichotomous,
+                                                     dichot=0)
 
     elif config.name=='midline':
         cd4 = pd.concat(read_input_files(config.cd4_input_files,
