@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 
 from datetime import datetime
+
 from classes import Ego, Alter
 
 
@@ -52,6 +53,17 @@ def make_dichotomous(variable, **kwargs):
                 return 1
             else:
                 return 0
+        else:
+            sys.exit('Invalid parameter; please try again.')
+
+
+def disclosure_status(data):
+    if (pd.isnull(data.KnowAlterStatus)) & (pd.isnull(data.AlterKnowStatus)):
+        return np.nan
+    elif (data.KnowAlterStatus==1) & (data.AlterKnowStatus==1):
+        return 1
+    else:
+        return 0
 
 
 def main(config):
@@ -67,7 +79,7 @@ def main(config):
     if config.name=='baseline':
         # read in cd4 count updates
         cd4 = pd.concat(read_input_files(config.cd4_input_files,
-                        header=['Egoid', 'cd4']))
+                        header=['EgoID', 'cd4']))
 
         # clean variables
         ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
@@ -92,11 +104,27 @@ def main(config):
                                 ego.EgoDateTestPoz) / np.timedelta64(1, 'Y')
         ego['isolate'] = ego.Degree_centrality.apply(make_dichotomous,
                                                      dichot=0)
+        ego['weekly_doses'] = ego.EgoDailyDoses * 7
+        ego['weekly_adherence'] = 1.0 - ego.EgoWeeklyMissed/ego.weekly_doses
+        ego.weekly_adherence = ego.weekly_adherence.apply(lambda x: np.nan if
+                                                          x<0 else x)
+        ego['support_receive'] = ego.EgoSupportReceiveNorm.apply(make_dichotomous,
+                                                                 one=[2, 3])
+        ego['support_provide'] = ego.EgoSupportProvideNorm.apply(make_dichotomous,
+                                                                 one=[2, 3])
+        ego['mutual_disclose'] = ego.apply(disclosure_status, axis=1)
+        ego['active_disclose'] = ego.AlterKnowStatusHow.apply(make_dichotomous,
+                                                             one=[1, 2, 3, 4, 5])
+        ego = ego.merge(cd4, on='EgoID', how='left')
+        ego.EgoCD4 = ego.apply(lambda x: x.cd4 if pd.isnull(x.EgoCD4) else
+                               x.EgoCD4, axis=1)
+        ego.drop('cd4', axis=1, inplace=True)
 
     elif config.name=='midline':
         cd4 = pd.concat(read_input_files(config.cd4_input_files,
                         header=['Egoid', 'cd4']))
         cd4 = cd4[cd4.cd4>0]
+
     else:
         pass
 
@@ -109,13 +137,12 @@ def main(config):
            ((id>=500) & (id<=526))]
 
     # save data
-    pickle.dump([ego, alt], open('{}/{}'.format(config._path_to_data,
-                'baseline.pkl'), 'wb'))
+    pickle.dump([ego, alt], open('{}/{}.pkl'.format(config._path_to_data,
+                config.name), 'wb'))
 
 
 class Config(object):
     _path_to_data = os.getcwd()
-
 
     @property
     def ego_input_files(self):
@@ -131,6 +158,7 @@ class Config(object):
     def cd4_input_files(self):
         return ['{}{}{}'.format(self._path_to_data, self._data_dir, fname) for
                 fname in self._cd4_inputs]
+
 
 class BaselineConfig(Config):
     name = 'baseline'
