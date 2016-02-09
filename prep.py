@@ -75,6 +75,10 @@ def main(config):
     ego = change_to_missing(ego)
     alt = change_to_missing(alt)
 
+    # change gender variable to unambiguous dichotomous variable
+    ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
+    ego.rename(columns={'EgoGender': 'male'}, inplace=True)
+
     # make survey-dependent changes
     if config.name=='baseline':
         # read in cd4 count updates
@@ -82,9 +86,6 @@ def main(config):
                         header=['EgoID', 'cd4']))
 
         # clean variables
-        ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
-        ego.rename(columns={'EgoGender': 'male'}, inplace=True)
-
         ego.EgoStartCare = convert_dates(ego, 'EgoStartCare')
         ego.EgoDateTestPoz = convert_dates(ego, 'EgoDateTestPoz')
 
