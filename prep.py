@@ -70,62 +70,64 @@ def main(config):
     # read in data and rename columns
     ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
     alt = rename_variables(pd.concat(read_input_files(config.alt_input_files)))
+    cd4 = pd.concat(read_input_files(config.cd4_input_files,
+                                     header=['EgoID', 'cd4']))
+    cd4 = cd4[cd4.cd4>0]
 
     # change uncollected data to missing (np.nan)
     ego = change_to_missing(ego)
     alt = change_to_missing(alt)
 
+    # change gender variable to unambiguous dichotomous variable
+    ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
+    ego.rename(columns={'EgoGender': 'male'}, inplace=True)
+
+    # reformat dates
+    ego.EgoStartCare = convert_dates(ego, 'EgoStartCare')
+    ego.EgoDateTestPoz = convert_dates(ego, 'EgoDateTestPoz')
+
+    # variable creation
+    ego['mths_treatment'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
+                            ego.EgoStartCare) / np.timedelta64(1, 'M')
+    ego['yrs_positive'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
+                            ego.EgoDateTestPoz) / np.timedelta64(1, 'Y')
+    ego['isolate'] = ego.Degree_centrality.apply(make_dichotomous,
+                                                 dichot=0)
+    ego['weekly_doses'] = ego.EgoDailyDoses * 7
+    ego['weekly_adherence'] = 1.0 - ego.EgoWeeklyMissed/ego.weekly_doses
+    ego.weekly_adherence = ego.weekly_adherence.apply(lambda x: np.nan if
+                                                      x<0 else x)
+    ego['support_receive'] = ego.EgoSupportReceiveNorm.apply(make_dichotomous,
+                                                             one=[2, 3])
+    ego['support_provide'] = ego.EgoSupportProvideNorm.apply(make_dichotomous,
+                                                             one=[2, 3])
+    ego['mutual_disclose'] = ego.apply(disclosure_status, axis=1)
+    ego['active_disclose'] = ego.AlterKnowStatusHow.apply(make_dichotomous,
+                                                          one=[1, 2, 3, 4, 5])
+
+    # merge in cd4 counts
+    ego = ego.merge(cd4, on='EgoID', how='left')
+    ego.EgoCD4 = ego.apply(lambda x: x.cd4 if pd.isnull(x.EgoCD4) else
+                           x.EgoCD4, axis=1)
+    ego.drop('cd4', axis=1, inplace=True)
+
     # make survey-dependent changes
     if config.name=='baseline':
-        # read in cd4 count updates
-        cd4 = pd.concat(read_input_files(config.cd4_input_files,
-                        header=['EgoID', 'cd4']))
-
-        # clean variables
-        ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
-        ego.rename(columns={'EgoGender': 'male'}, inplace=True)
-
-        ego.EgoStartCare = convert_dates(ego, 'EgoStartCare')
-        ego.EgoDateTestPoz = convert_dates(ego, 'EgoDateTestPoz')
-
-        # fixup start care year for a couple of ego's (bad dates discovered by
-        # hand)
+        # fixup start care year for a couple of ego's
         ego.EgoStartCare[(ego.EgoID==385) |
                          (ego.EgoID==392)] == datetime.strptime('01Dec2010',
                          '%d%b%Y')
         ego.EgoStartCare[(ego.EgoID==349) |
                          (ego.EgoID==392)] == datetime.strptime('01Jan2011',
                          '%d%b%Y')
-
-        # variable creation
-        ego['mths_treatment'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
-                                ego.EgoStartCare) / np.timedelta64(1, 'M')
-        ego['yrs_positive'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
-                                ego.EgoDateTestPoz) / np.timedelta64(1, 'Y')
-        ego['isolate'] = ego.Degree_centrality.apply(make_dichotomous,
-                                                     dichot=0)
-        ego['weekly_doses'] = ego.EgoDailyDoses * 7
-        ego['weekly_adherence'] = 1.0 - ego.EgoWeeklyMissed/ego.weekly_doses
-        ego.weekly_adherence = ego.weekly_adherence.apply(lambda x: np.nan if
-                                                          x<0 else x)
-        ego['support_receive'] = ego.EgoSupportReceiveNorm.apply(make_dichotomous,
-                                                                 one=[2, 3])
-        ego['support_provide'] = ego.EgoSupportProvideNorm.apply(make_dichotomous,
-                                                                 one=[2, 3])
-        ego['mutual_disclose'] = ego.apply(disclosure_status, axis=1)
-        ego['active_disclose'] = ego.AlterKnowStatusHow.apply(make_dichotomous,
-                                                             one=[1, 2, 3, 4, 5])
-        ego = ego.merge(cd4, on='EgoID', how='left')
-        ego.EgoCD4 = ego.apply(lambda x: x.cd4 if pd.isnull(x.EgoCD4) else
-                               x.EgoCD4, axis=1)
-        ego.drop('cd4', axis=1, inplace=True)
-
     elif config.name=='midline':
-        cd4 = pd.concat(read_input_files(config.cd4_input_files,
-                        header=['Egoid', 'cd4']))
-        cd4 = cd4[cd4.cd4>0]
+        # delete additional records
+        ego.drop_duplicates(['EgoID', 'Alter_number', 'Alter_name'],
+                            inplace=True)
+        alt.drop_duplicates(['EgoID', 'Alter_1_number', 'Alter_2_number'],
+                            inplace=True)
 
-    else:
+    elif config.name=='endline':
         pass
 
     # create ego and alter classes
@@ -171,9 +173,12 @@ class BaselineConfig(Config):
 class MidlineConfig(Config):
     name = 'midline'
     _data_dir = '/data/m6/'
-    _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
-    _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
+    _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv', 'ego_pt3.csv',
+                   'ego_pt4.csv', 'ego_pt5.csv', 'ego_pt6.csv']
+    _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv', 'alter_pt3.csv',
+                   'alter_pt4.csv', 'alter_pt5.csv', 'alter_pt6.csv']
     _cd4_inputs = ['original_cd4.csv', 'missing_cd4.csv']
+    _adherence_input = ['adherence.csv']
 
 
 class EndlineConfig(Config):
