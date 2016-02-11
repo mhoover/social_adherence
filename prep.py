@@ -126,7 +126,6 @@ def main(config):
                             inplace=True)
         alt.drop_duplicates(['EgoID', 'Alter_1_number', 'Alter_2_number'],
                             inplace=True)
-
     elif config.name=='endline':
         pass
 
