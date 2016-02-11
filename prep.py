@@ -122,8 +122,12 @@ def main(config):
                          '%d%b%Y')
     elif config.name=='midline':
         # delete additional records
+        ego.drop_duplicates(['EgoID', 'Alter_number', 'Alter_name'],
+                            inplace=True)
+        alt.drop_duplicates(['EgoID', 'Alter_1_number', 'Alter_2_number'],
+                            inplace=True)
 
-    else:
+    elif config.name=='endline':
         pass
 
     # create ego and alter classes
