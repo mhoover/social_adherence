@@ -184,8 +184,19 @@ class MidlineConfig(Config):
 class EndlineConfig(Config):
     name = 'endline'
     _data_dir = '/data/m12/'
-    _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv']
-    _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv']
+    _ego_inputs = ['ego_pt1.csv', 'ego_pt2.csv', 'ego_pt3.csv', 'ego_pt4.csv',
+                   'ego_pt5.csv', 'ego_pt6.csv', 'ego_pt7.csv', 'ego_pt8.csv',
+                   'ego_pt9.csv', 'ego_pt10.csv', 'ego_pt11.csv',
+                   'ego_pt12.csv', 'ego_pt13.csv', 'ego_pt14.csv']
+    _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv', 'alter_pt3.csv',
+                   'alter_pt4.csv', 'alter_pt5.csv', 'alter_pt6.csv',
+                   'alter_pt7.csv', 'alter_pt8.csv', 'alter_pt9.csv',
+                   'alter_pt10.csv', 'alter_pt11.csv', 'alter_pt12.csv',
+                   'alter_pt13.csv', 'alter_pt14.csv']
+    _alt_followup_inputs = ['alter_followup_pt1.csv', 'alter_followup_pt2.csv',
+                            'alter_followup_pt3.csv', 'alter_followup_pt4.csv',
+                            'alter_followup_pt5.csv']
+    _adherence_input = ['adherence.csv']
 
 
 if __name__ == '__main__':
