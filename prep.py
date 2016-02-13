@@ -70,9 +70,6 @@ def main(config):
     # read in data and rename columns
     ego = rename_variables(pd.concat(read_input_files(config.ego_input_files)))
     alt = rename_variables(pd.concat(read_input_files(config.alt_input_files)))
-    cd4 = pd.concat(read_input_files(config.cd4_input_files,
-                                     header=['EgoID', 'cd4']))
-    cd4 = cd4[cd4.cd4>0]
 
     # change uncollected data to missing (np.nan)
     ego = change_to_missing(ego)
@@ -105,13 +102,17 @@ def main(config):
     ego['active_disclose'] = ego.AlterKnowStatusHow.apply(make_dichotomous,
                                                           one=[1, 2, 3, 4, 5])
 
-    # merge in cd4 counts
-    ego = ego.merge(cd4, on='EgoID', how='left')
-    ego.EgoCD4 = ego.apply(lambda x: x.cd4 if pd.isnull(x.EgoCD4) else
-                           x.EgoCD4, axis=1)
-    ego.drop('cd4', axis=1, inplace=True)
-
     # make survey-dependent changes
+    if config.name!='endine':
+        # merge in cd4 counts
+        cd4 = pd.concat(read_input_files(config.cd4_input_files,
+                                         header=['EgoID', 'cd4']))
+        cd4 = cd4[cd4.cd4>0]
+        ego = ego.merge(cd4, on='EgoID', how='left')
+        ego.EgoCD4 = ego.apply(lambda x: x.cd4 if pd.isnull(x.EgoCD4) else
+                               x.EgoCD4, axis=1)
+        ego.drop('cd4', axis=1, inplace=True)
+
     if config.name=='baseline':
         # fixup start care year for a couple of ego's
         ego.EgoStartCare[(ego.EgoID==385) |
