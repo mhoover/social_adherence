@@ -4,14 +4,16 @@ import pytest
 import pandas as pd
 import numpy as np
 
+from datetime import datetime
 from prep import *
 
 
 df1 = pd.DataFrame({'Col 1': [1, -1] * 2})
 df2 = pd.DataFrame({'Col2': [2, np.nan] * 2})
-
-# def test_read_input_files(input_files, header=None):
-#     pass
+df3 = pd.DataFrame({'var1': ['Sep 12 2015', 'September  2015', 'sep 1 2015'],
+                    'var2': ['1 Dec 2014', '1 December 2014', 'Dec. 12 2014'],
+                    'var3': ['August 2012 2011', 'aug 2012', '2012 2011'],
+                   })
 
 @pytest.mark.parametrize('test, expected', [
     (df1, ['Col_1']),
@@ -33,8 +35,24 @@ def test_change_to_missing(test, expected):
     assert all(result == expected)
 
 
-# def test_convert_dates(data, variable):
-#     pass
+@pytest.mark.parametrize('test_data, var, expected', [
+    (df3, 'var1', [datetime.strptime('01Sep2015', '%d%b%Y'),
+                   datetime.strptime('01Sep2015', '%d%b%Y'),
+                   datetime.strptime('01Sep2015', '%d%b%Y'),
+                  ]),
+    (df3, 'var2', [datetime.strptime('01Dec2014', '%d%b%Y'),
+                   datetime.strptime('01Dec2014', '%d%b%Y'),
+                   datetime.strptime('01Dec2014', '%d%b%Y'),
+                  ]),
+    (df3, 'var3', [datetime.strptime('01Aug2012', '%d%b%Y'),
+                   datetime.strptime('01Aug2012', '%d%b%Y'),
+                   np.nan,
+                  ]),
+])
+def test_convert_dates(test_data, var, expected):
+    result = convert_dates(test_data, var)
+
+    assert result == expected
 
 
 # def test_make_dichotomous(variable, **kwargs):

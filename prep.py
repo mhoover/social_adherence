@@ -36,7 +36,7 @@ def convert_dates(data, variable):
            data[variable].apply(lambda x: re.search('[A-Za-z]{1,}',
            x)).tolist()]
     yr = [yr.group(0) if yr is not None else '' for yr in
-          data[variable].apply(lambda x: re.search('\d{2,}',
+          data[variable].apply(lambda x: re.search('\d{3,}',
           x)).tolist()]
     return [datetime.strptime('01{}{}'.format(m, y), '%d%b%Y') if m is not
             '' else np.nan for m, y in zip(mth, yr)]
