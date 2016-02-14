@@ -17,6 +17,9 @@ df3 = pd.DataFrame({'var1': ['Sep 12 2015', 'September  2015', 'sep 1 2015'],
 df4 = pd.DataFrame({'v1': [0, .01, .04, .09, .99, 1],
                     'v2': [1, 2, 3, 4, 5, 6],
                    })
+df5 = pd.DataFrame({'KnowAlterStatus': [1, 1, 0, 0, np.nan],
+                    'AlterKnowStatus': [1, 0, 1, 0, np.nan],
+                   })
 
 @pytest.mark.parametrize('test, expected', [
     (df1, ['Col_1']),
@@ -76,5 +79,10 @@ def test_make_dichotomous(test_data, var, val, expected):
     assert all(result == expected)
 
 
-# def test_disclosure_status(data):
-#     pass
+@pytest.mark.parametrize('test, expected', [
+    (df5, [1, 0, 0, 0, np.nan]),
+ ])
+def test_disclosure_status(test, expected):
+    result = test.apply(disclosure_status, axis=1)
+
+    np.testing.assert_equal(result.tolist(), expected)
