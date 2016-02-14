@@ -14,6 +14,9 @@ df3 = pd.DataFrame({'var1': ['Sep 12 2015', 'September  2015', 'sep 1 2015'],
                     'var2': ['1 Dec 2014', '1 December 2014', 'Dec. 12 2014'],
                     'var3': ['August 2012 2011', 'aug 2012', '2012 2011'],
                    })
+df4 = pd.DataFrame({'v1': [0, .01, .04, .09, .99, 1],
+                    'v2': [1, 2, 3, 4, 5, 6],
+                   })
 
 @pytest.mark.parametrize('test, expected', [
     (df1, ['Col_1']),
@@ -55,8 +58,22 @@ def test_convert_dates(test_data, var, expected):
     assert result == expected
 
 
-# def test_make_dichotomous(variable, **kwargs):
-#     pass
+@pytest.mark.parametrize('test_data, var, val, expected', [
+    (df4, 'v1', .04, [0, 0, 0, 1, 1, 1]),
+])
+def test_make_dichotomous(test_data, var, val, expected):
+    result = test_data[var].apply(make_dichotomous, dichot=val)
+
+    assert all(result == expected)
+
+
+@pytest.mark.parametrize('test_data, var, val, expected', [
+    (df4, 'v2', [4, 5, 6], [0, 0, 0, 1, 1, 1]),
+])
+def test_make_dichotomous(test_data, var, val, expected):
+    result = test_data[var].apply(make_dichotomous, one=val)
+
+    assert all(result == expected)
 
 
 # def test_disclosure_status(data):
