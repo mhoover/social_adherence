@@ -75,19 +75,6 @@ def main(config):
     ego = change_to_missing(ego)
     alt = change_to_missing(alt)
 
-    # change gender variable to unambiguous dichotomous variable
-    ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
-    ego.rename(columns={'EgoGender': 'male'}, inplace=True)
-
-    # reformat dates
-    ego.EgoStartCare = convert_dates(ego, 'EgoStartCare')
-    ego.EgoDateTestPoz = convert_dates(ego, 'EgoDateTestPoz')
-
-    # variable creation
-    ego['mths_treatment'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
-                            ego.EgoStartCare) / np.timedelta64(1, 'M')
-    ego['yrs_positive'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
-                            ego.EgoDateTestPoz) / np.timedelta64(1, 'Y')
     ego['isolate'] = ego.Degree_centrality.apply(make_dichotomous,
                                                  dichot=0)
     ego['weekly_doses'] = ego.EgoDailyDoses * 7
@@ -101,9 +88,22 @@ def main(config):
     ego['mutual_disclose'] = ego.apply(disclosure_status, axis=1)
     ego['active_disclose'] = ego.AlterKnowStatusHow.apply(make_dichotomous,
                                                           one=[1, 2, 3, 4, 5])
-
     # make survey-dependent changes
-    if config.name!='endine':
+    if config.name!='endline':
+        # change gender variable to unambiguous dichotomous variable
+        ego.EgoGender = ego.EgoGender.apply(lambda x: 0 if x==2 else x)
+        ego.rename(columns={'EgoGender': 'male'}, inplace=True)
+
+        # reformat dates
+        ego.EgoStartCare = convert_dates(ego, 'EgoStartCare')
+        ego.EgoDateTestPoz = convert_dates(ego, 'EgoDateTestPoz')
+
+        # variable creation
+        ego['mths_treatment'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
+                                ego.EgoStartCare) / np.timedelta64(1, 'M')
+        ego['yrs_positive'] = (datetime.strptime('01Sep2011', '%d%b%Y') -
+                                ego.EgoDateTestPoz) / np.timedelta64(1, 'Y')
+
         # merge in cd4 counts
         cd4 = pd.concat(read_input_files(config.cd4_input_files,
                                          header=['EgoID', 'cd4']))
@@ -136,7 +136,9 @@ def main(config):
         alt.drop_duplicates(['EgoID', 'Alter_1_number', 'Alter_2_number'],
                             inplace=True)
     elif config.name=='endline':
-        pass
+        # read in alter follow-up surveys
+        alt_followup = rename_variables(pd.concat(read_input_files(
+                                        config.alt_followup_input_files)))
 
     # create ego and alter classes
     ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
@@ -174,6 +176,10 @@ class Config(object):
         return ['{}{}{}'.format(self._path_to_data, self._data_dir, fname) for
                 fname in self._adherence_inputs]
 
+    @property
+    def alt_followup_input_files(self):
+        return ['{}{}{}'.format(self._path_to_data, self._data_dir, fname) for
+                fname in self._alt_followup_inputs]
 
 
 class BaselineConfig(Config):
