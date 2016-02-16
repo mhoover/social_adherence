@@ -122,14 +122,6 @@ def main(config):
                          (ego.EgoID==392)] == datetime.strptime('01Jan2011',
                          '%d%b%Y')
     elif config.name=='midline':
-        # update adherence data
-        adherence = pd.concat(read_input_files(config.adherence_input_files))
-        ego = ego.merge(adherence, on='EgoID', how='left')
-        ego.weekly_adherence = ego.apply(lambda x: x.WeeklyAdherence if
-                                         pd.isnull(x.weekly_adherence) else
-                                         x.weekly_adherence, axis=1)
-        ego.drop('WeeklyAdherence', axis=1, inplace=True)
-
         # delete additional records
         ego.drop_duplicates(['EgoID', 'Alter_number', 'Alter_name'],
                             inplace=True)
@@ -140,6 +132,10 @@ def main(config):
         alt_followup = rename_variables(pd.concat(read_input_files(
                                         config.alt_followup_input_files)))
 
+        # variable clean up
+        ego.EgoIncome ego.EgoIncome.apply(lambda x: np.nan if x=='Business'
+                                          else int(x))
+
     # create ego and alter classes
     ego = [Ego(group, id) for id, group in ego.groupby('EgoID') if
            (len(group)>1) & ((id>=300) & (id<=475)) |
@@ -149,8 +145,8 @@ def main(config):
            ((id>=500) & (id<=526))]
 
     # save data
-    pickle.dump([ego, alt], open('{}/{}.pkl'.format(config._path_to_data,
-                config.name), 'wb'))
+    # pickle.dump([ego, alt], open('{}/{}.pkl'.format(config._path_to_data,
+    #             config.name), 'wb'))
 
 
 class Config(object):
@@ -170,11 +166,6 @@ class Config(object):
     def cd4_input_files(self):
         return ['{}{}{}'.format(self._path_to_data, self._data_dir, fname) for
                 fname in self._cd4_inputs]
-
-    @property
-    def adherence_input_files(self):
-        return ['{}{}{}'.format(self._path_to_data, self._data_dir, fname) for
-                fname in self._adherence_inputs]
 
     @property
     def alt_followup_input_files(self):
@@ -198,7 +189,6 @@ class MidlineConfig(Config):
     _alt_inputs = ['alter_pt1.csv', 'alter_pt2.csv', 'alter_pt3.csv',
                    'alter_pt4.csv', 'alter_pt5.csv', 'alter_pt6.csv']
     _cd4_inputs = ['original_cd4.csv', 'missing_cd4.csv']
-    _adherence_inputs = ['adherence.csv']
 
 
 class EndlineConfig(Config):
@@ -216,7 +206,6 @@ class EndlineConfig(Config):
     _alt_followup_inputs = ['alter_followup_pt1.csv', 'alter_followup_pt2.csv',
                             'alter_followup_pt3.csv', 'alter_followup_pt4.csv',
                             'alter_followup_pt5.csv']
-    _adherence_inputs = ['adherence.csv']
 
 
 if __name__ == '__main__':
