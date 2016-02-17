@@ -1,6 +1,10 @@
 language: python
 python:
     - "2.7"
+before_install:
+  - pip install libblas-dev
+  - pip install liblapack-dev
+  - pip install gfortran
 install:
     - pip install -r requirements.txt
 script:
