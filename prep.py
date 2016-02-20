@@ -133,7 +133,7 @@ def main(config):
                                         config.alt_followup_input_files)))
 
         # variable clean up
-        ego.EgoIncome ego.EgoIncome.apply(lambda x: np.nan if x=='Business'
+        ego.EgoIncome = ego.EgoIncome.apply(lambda x: np.nan if x=='Business'
                                           else int(x))
 
     # create ego and alter classes
