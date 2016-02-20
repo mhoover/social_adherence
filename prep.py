@@ -9,7 +9,7 @@ import numpy as np
 
 from datetime import datetime
 
-from classes import Ego, Alter
+from social_adherence.classes import Ego, Alter
 
 
 def read_input_files(input_files, header=None):
