@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from datetime import datetime
-from prep import *
+from social_adherence.prep import *
 
 
 df1 = pd.DataFrame({'Col 1': [1, -1] * 2})
