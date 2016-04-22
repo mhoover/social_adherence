@@ -145,8 +145,8 @@ def main(config):
            ((id>=500) & (id<=526))]
 
     # save data
-    # pickle.dump([ego, alt], open('{}/{}.pkl'.format(config._path_to_data,
-    #             config.name), 'wb'))
+    pickle.dump([ego, alt], open('{}/{}.pkl'.format(config._path_to_data,
+                config.name), 'wb'))
 
 
 class Config(object):
